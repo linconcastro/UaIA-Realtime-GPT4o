@@ -23,12 +23,10 @@ header{background:var(--header);padding:12px 16px;display:flex;justify-content:s
 .typing span:nth-child(2){animation-delay:.2s}
 .typing span:nth-child(3){animation-delay:.4s}
 @keyframes blink{from{opacity:.2}to{opacity:1}}
-footer{background:var(--header);padding:8px;display:flex;gap:8px}
+footer{background:var(--header);padding:8px;display:flex;gap:8px;position:sticky;bottom:0}
 input{flex:1;padding:10px;border:none;border-radius:20px;background:#2b2b2b;color:#eee;font-size:15px}
-button{padding:10px 16px;border:none;border-radius:20px;background:var(--user);color:#fff;font-weight:600}
-@media(max-width:600px){
-  .bubble{max-width:90%}
-}
+button{padding:10px 16px;border:none;border-radius:20px;background:var(--user);color:#fff;font-weight:600;cursor:pointer}
+@media(max-width:600px){.bubble{max-width:90%}}
 </style>
 </head>
 <body>
@@ -36,8 +34,11 @@ button{padding:10px 16px;border:none;border-radius:20px;background:var(--user);c
   <span id="username">Não logado</span>
   <button id="logout" style="display:none">Logout</button>
 </header>
+
 <main id="chat"></main>
+
 <footer>
+  <button id="mic">🎤</button>
   <input id="txt" placeholder="Digite sua mensagem..." autocomplete="off">
   <button id="send">Enviar</button>
 </footer>
@@ -45,6 +46,23 @@ button{padding:10px 16px;border:none;border-radius:20px;background:var(--user);c
 <script>
 const ws=new WebSocket(location.origin.replace(/^http/,'ws'));
 let user=null,typingEl=null,assistantBubble=null;
+const micBtn=document.getElementById('mic');
+let recognition,recognizing=false;
+
+if('webkitSpeechRecognition'in window){
+  recognition=new webkitSpeechRecognition();
+  recognition.lang='pt-BR';
+  recognition.interimResults=false;
+  recognition.onresult=e=>{
+    document.getElementById('txt').value=e.results[0][0].transcript;
+    send();
+  };
+  recognition.onend=()=>{recognizing=false;micBtn.textContent='🎤';};
+  micBtn.onclick=()=>{
+    if(recognizing){recognition.stop();return;}
+    recognition.start();recognizing=true;micBtn.textContent='◼';
+  };
+}else{micBtn.style.display='none';}
 
 function addBubble(cls,html){
   const div=document.createElement('div');
@@ -59,9 +77,7 @@ function showTyping(){
   typingEl=addBubble('assistant','<div class="typing"><span></span><span></span><span></span></div>');
 }
 
-function hideTyping(){
-  if(typingEl){typingEl.remove();typingEl=null;}
-}
+function hideTyping(){if(typingEl){typingEl.remove();typingEl=null;}}
 
 function login(){
   user=prompt('Digite seu nome:','visitante_'+Math.floor(Math.random()*1000));
@@ -86,13 +102,40 @@ function send(){
   assistantBubble=addBubble('assistant','');
 }
 
+function speak(text){
+  fetch('https://api.elevenlabs.io/v1/text-to-speech/YOUR_VOICE_ID/stream',{
+    method:'POST',
+    headers:{
+      'xi-api-key':window.ELEVEN_API_KEY||'',
+      'Content-Type':'application/json'
+    },
+    body:JSON.stringify({text,voice_settings:{stability:0.3,similarity_boost:0.9}})
+  })
+  .then(r=>r.blob())
+  .then(b=>{
+    const url=URL.createObjectURL(b);
+    const audio=new Audio(url);
+    audio.play().catch(()=>{
+      const btn=document.createElement('button');
+      btn.textContent='▶️ Ouvir resposta';
+      btn.onclick=()=>audio.play();
+      assistantBubble.appendChild(btn);
+    });
+  });
+}
+
 ws.onopen=login;
+let assistantText='';
 ws.onmessage=e=>{
   const data=JSON.parse(e.data);
   if(data.type==='assistant'){
     hideTyping();
-    assistantBubble.innerHTML+=data.content.replace(/\n/g,'<br>');
+    assistantText+=data.content;
+    assistantBubble.innerHTML=assistantText.replace(/\\n/g,'<br>');
     assistantBubble.scrollIntoView();
+    // Se quiser falar quando a mensagem terminar, pode usar um timeout simples:
+    clearTimeout(window._speakT);
+    window._speakT=setTimeout(()=>{speak(assistantText);assistantText='';},800);
   }
 };
 </script>
