@@ -1,1 +1,31 @@
-[]
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Login • UaIA</title>
+<style>
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#121212;color:#eee;font-family:system-ui}
+h1{margin-bottom:24px}
+button{width:240px;padding:12px;margin:8px;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer}
+.google{background:#fff;color:#000}
+.facebook{background:#1877f2;color:#fff}
+.insta{background:#e1306c;color:#fff}
+</style>
+</head>
+<body>
+<h1>Entrar na UaIA</h1>
+<button class="google" onclick="login('Google')">Continuar com Google</button>
+<button class="facebook" onclick="login('Facebook')">Continuar com Facebook</button>
+<button class="insta" onclick="login('Instagram')">Continuar com Instagram</button>
+
+<script>
+function login(provider){
+  const name = prompt(`Nome de usuário (${provider}):`);
+  if(!name) return;
+  localStorage.setItem('uaia_user', name);
+  location.href='index.html';
+}
+</script>
+</body>
+</html>
