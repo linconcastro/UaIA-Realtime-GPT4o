@@ -6,10 +6,7 @@
 <title>UaIA</title>
 <style>
 :root{
-  --bg:#121212;
-  --header:#1e1e1e;
-  --user:#0084ff;
-  --assistant:#2b2b2b;
+  --bg:#121212;--header:#1e1e1e;--user:#0084ff;--assistant:#2b2b2b;
 }
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:#eee;display:flex;flex-direction:column;height:100vh}
@@ -24,8 +21,10 @@ header{background:var(--header);padding:12px 16px;display:flex;justify-content:s
 .typing span:nth-child(3){animation-delay:.4s}
 @keyframes blink{from{opacity:.2}to{opacity:1}}
 footer{background:var(--header);padding:8px;display:flex;gap:8px;position:sticky;bottom:0}
-input{flex:1;padding:10px;border:none;border-radius:20px;background:#2b2b2b;color:#eee;font-size:15px}
-button{padding:10px 16px;border:none;border-radius:20px;background:var(--user);color:#fff;font-weight:600;cursor:pointer}
+select,input,button{font-size:15px;border:none;border-radius:20px;padding:10px;background:#2b2b2b;color:#eee}
+button{background:var(--user);color:#fff;font-weight:600;cursor:pointer}
+#mic{width:48px;padding:0}
+input{flex:1;background:#2b2b2b}
 @media(max-width:600px){.bubble{max-width:90%}}
 </style>
 </head>
@@ -38,6 +37,11 @@ button{padding:10px 16px;border:none;border-radius:20px;background:var(--user);c
 <main id="chat"></main>
 
 <footer>
+  <select id="voiceSel">
+    <option value="VOICE_ID_A">Amiga</option>
+    <option value="VOICE_ID_B">Executiva</option>
+    <option value="VOICE_ID_C">Motivacional</option>
+  </select>
   <button id="mic">🎤</button>
   <input id="txt" placeholder="Digite sua mensagem..." autocomplete="off">
   <button id="send">Enviar</button>
@@ -47,8 +51,12 @@ button{padding:10px 16px;border:none;border-radius:20px;background:var(--user);c
 const ws=new WebSocket(location.origin.replace(/^http/,'ws'));
 let user=null,typingEl=null,assistantBubble=null;
 const micBtn=document.getElementById('mic');
-let recognition,recognizing=false;
+const voiceSel=document.getElementById('voiceSel');
+voiceSel.value=localStorage.getItem('uaia_voice')||'VOICE_ID_A';
+voiceSel.onchange=()=>localStorage.setItem('uaia_voice',voiceSel.value);
 
+// --- Web Speech API ---
+let recognition,recognizing=false;
 if('webkitSpeechRecognition'in window){
   recognition=new webkitSpeechRecognition();
   recognition.lang='pt-BR';
@@ -64,6 +72,7 @@ if('webkitSpeechRecognition'in window){
   };
 }else{micBtn.style.display='none';}
 
+// --- Chat helpers ---
 function addBubble(cls,html){
   const div=document.createElement('div');
   div.className='bubble '+cls;
@@ -72,13 +81,8 @@ function addBubble(cls,html){
   div.scrollIntoView();
   return div;
 }
-
-function showTyping(){
-  typingEl=addBubble('assistant','<div class="typing"><span></span><span></span><span></span></div>');
-}
-
+function showTyping(){typingEl=addBubble('assistant','<div class="typing"><span></span><span></span><span></span></div>');}
 function hideTyping(){if(typingEl){typingEl.remove();typingEl=null;}}
-
 function login(){
   user=prompt('Digite seu nome:','visitante_'+Math.floor(Math.random()*1000));
   if(!user)return;
@@ -86,24 +90,22 @@ function login(){
   document.getElementById('logout').style.display='inline';
   ws.send(JSON.stringify({type:'login',user}));
 }
-
 document.getElementById('logout').onclick=()=>location.reload();
 document.getElementById('send').onclick=send;
 document.getElementById('txt').addEventListener('keydown',e=>{if(e.key==='Enter')send();});
-
 function send(){
   const txt=document.getElementById('txt');
   const msg=txt.value.trim();
   if(!msg)return;
   addBubble('user',msg);
   ws.send(JSON.stringify({type:'message',content:msg}));
-  txt.value='';
-  showTyping();
-  assistantBubble=addBubble('assistant','');
+  txt.value='';showTyping();assistantBubble=addBubble('assistant','');
 }
 
+// --- ElevenLabs TTS ---
 function speak(text){
-  fetch('https://api.elevenlabs.io/v1/text-to-speech/YOUR_VOICE_ID/stream',{
+  const vid=voiceSel.value;
+  fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vid}/stream`,{
     method:'POST',
     headers:{
       'xi-api-key':window.ELEVEN_API_KEY||'',
@@ -133,7 +135,6 @@ ws.onmessage=e=>{
     assistantText+=data.content;
     assistantBubble.innerHTML=assistantText.replace(/\\n/g,'<br>');
     assistantBubble.scrollIntoView();
-    // Se quiser falar quando a mensagem terminar, pode usar um timeout simples:
     clearTimeout(window._speakT);
     window._speakT=setTimeout(()=>{speak(assistantText);assistantText='';},800);
   }
