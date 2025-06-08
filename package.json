@@ -1,0 +1,16 @@
+{
+  "name": "uaia-realtime-gpt4o",
+  "version": "1.0.0",
+  "description": "UaIA realtime chat with GPT-4o and ElevenLabs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.17.0",
+    "dotenv": "^16.4.5",
+    "node-fetch": "^2.6.9",
+    "openai": "^4.26.0"
+  }
+}
