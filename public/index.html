@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UaIA Chat</title>
+<style>
+body{margin:0;font-family:sans-serif;background:#121212;color:#eee;display:flex;flex-direction:column;height:100vh}
+header{padding:10px;background:#1e1e1e;display:flex;justify-content:space-between;align-items:center}
+#chat{flex:1;overflow-y:auto;padding:10px}
+.msg{margin:5px 0}
+.user{color:#8ab4f8}
+.assistant{color:#c58af9}
+footer{display:flex;padding:10px;background:#1e1e1e}
+input{flex:1;padding:10px;border:none;border-radius:4px;background:#2b2b2b;color:#eee}
+button{margin-left:5px;padding:10px 15px;border:none;border-radius:4px;background:#8ab4f8;color:#000;font-weight:bold}
+</style>
+</head>
+<body>
+<header>
+<span id="username">Não logado</span>
+<button id="logout" style="display:none">Logout</button>
+</header>
+<div id="chat"></div>
+<footer>
+<input id="txt" placeholder="Digite sua mensagem..." autocomplete="off">
+<button id="send">Enviar</button>
+</footer>
+
+<script>
+const ws = new WebSocket(location.origin.replace(/^http/,'ws'));
+let user = null;
+
+function addMsg(cls,text){
+  const div=document.createElement('div');
+  div.className='msg '+cls;
+  div.textContent=text;
+  document.getElementById('chat').appendChild(div);
+  div.scrollIntoView();
+}
+
+function login(){
+  user=prompt('Digite seu nome de usuário:','visitante_'+Math.floor(Math.random()*1000));
+  if(!user)return;
+  document.getElementById('username').textContent=user;
+  document.getElementById('logout').style.display='inline';
+  ws.send(JSON.stringify({type:'login',user}));
+}
+
+document.getElementById('logout').onclick=()=>location.reload();
+document.getElementById('send').onclick=send;
+document.getElementById('txt').addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+
+function send(){
+  const txt=document.getElementById('txt');
+  const msg=txt.value.trim();
+  if(!msg)return;
+  addMsg('user',msg);
+  ws.send(JSON.stringify({type:'message',content:msg}));
+  txt.value='';
+}
+
+ws.onopen=login;
+ws.onmessage=e=>{
+  const data=JSON.parse(e.data);
+  if(data.type==='assistant') addMsg('assistant',data.content);
+};
+</script>
+</body>
+</html>
