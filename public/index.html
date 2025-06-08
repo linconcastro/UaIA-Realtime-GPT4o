@@ -4,32 +4,51 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>UaIA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#121212;--header:#1e1e1e;--user:#0084ff;--assistant:#2b2b2b}
-*{box-sizing:border-box}
-body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:#eee;display:flex;flex-direction:column;height:100vh}
-header{background:var(--header);padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
-#chat{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px}
-.bubble{max-width:80%;padding:10px 14px;border-radius:18px;word-wrap:break-word;white-space:pre-wrap;font-size:15px;line-height:1.4}
-.user{align-self:flex-end;background:var(--user);color:#fff;border-bottom-right-radius:4px}
-.assistant{align-self:flex-start;background:var(--assistant);color:#eee;border-bottom-left-radius:4px}
-.typing{width:52px;height:20px;display:flex;align-items:center;justify-content:space-around}
-.typing span{width:6px;height:6px;background:#ccc;border-radius:50%;animation:blink 1s infinite alternate}
+:root{
+  --bg:#0f0f12;
+  --bg-light:#1b1b1f;
+  --header-grad:linear-gradient(90deg,#5f4bff 0%,#9e23ff 100%);
+  --user:#4e8cff;
+  --assistant:#2e2e37;
+  --radius:18px;
+  --shadow:0 2px 6px rgba(0,0,0,.25);
+  --font:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+}
+@media(prefers-color-scheme:light){
+  :root{--bg:#f9f9fb;--bg-light:#fff;--assistant:#ececec;--user:#0066ff;color:#111}
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:#eee;display:flex;flex-direction:column;height:100vh;transition:background .3s}
+header{background:var(--header-grad);padding:14px 20px;display:flex;align-items:center;gap:10px;color:#fff;box-shadow:var(--shadow)}
+header img{width:36px;height:36px;border-radius:50%}
+#chat{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
+.bubble{max-width:78%;padding:12px 16px;border-radius:var(--radius);word-wrap:break-word;white-space:pre-wrap;font-size:15px;line-height:1.45;box-shadow:var(--shadow);animation:fade .3s ease}
+.user{align-self:flex-end;background:var(--user);color:#fff;border-bottom-right-radius:6px}
+.assistant{align-self:flex-start;background:var(--assistant);color:#eee;border-bottom-left-radius:6px}
+.typing{width:60px;height:22px;display:flex;align-items:center;justify-content:space-around}
+.typing span{width:8px;height:8px;background:#ccc;border-radius:50%;animation:blink 1s infinite alternate}
 .typing span:nth-child(2){animation-delay:.2s}
 .typing span:nth-child(3){animation-delay:.4s}
 @keyframes blink{from{opacity:.2}to{opacity:1}}
-footer{background:var(--header);padding:8px;display:flex;gap:8px;position:sticky;bottom:0}
-select,input,button{font-size:15px;border:none;border-radius:20px;padding:10px;background:#2b2b2b;color:#eee}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+footer{background:var(--bg-light);padding:12px;display:flex;gap:10px;position:sticky;bottom:0;box-shadow:0 -2px 4px rgba(0,0,0,.2)}
+select,input,button{font-size:15px;border:none;border-radius:30px;padding:12px 16px;background:var(--assistant);color:#eee;transition:background .2s}
 button{background:var(--user);color:#fff;font-weight:600;cursor:pointer}
-#mic{width:48px;padding:0}
-input{flex:1;background:#2b2b2b}
+button:hover{filter:brightness(1.1)}
+#mic{width:50px;padding:0;font-size:22px}
+input{flex:1;background:var(--assistant)}
 @media(max-width:600px){.bubble{max-width:90%}}
 </style>
 </head>
 <body>
 <header>
+  <img src="https://i.imgur.com/zb6K6Qk.png" alt="UaIA">
   <span id="username">Não logado</span>
-  <button id="logout" style="display:none">Logout</button>
+  <button id="logout" style="margin-left:auto;display:none">Logout</button>
 </header>
 
 <main id="chat"></main>
@@ -57,11 +76,9 @@ voiceSel.onchange=()=>localStorage.setItem('uaia_voice',voiceSel.value);
 let recognition,recognizing=false;
 if('webkitSpeechRecognition'in window){
   recognition=new webkitSpeechRecognition();
-  recognition.lang='pt-BR';
-  recognition.interimResults=false;
+  recognition.lang='pt-BR';recognition.interimResults=false;
   recognition.onresult=e=>{
-    document.getElementById('txt').value=e.results[0][0].transcript;
-    send();
+    document.getElementById('txt').value=e.results[0][0].transcript;send();
   };
   recognition.onend=()=>{recognizing=false;micBtn.textContent='🎤';};
   micBtn.onclick=()=>{
@@ -72,39 +89,25 @@ if('webkitSpeechRecognition'in window){
 
 // --- Chat helpers ---
 function addBubble(cls,html){
-  const div=document.createElement('div');
-  div.className='bubble '+cls;
-  div.innerHTML=html;
-  document.getElementById('chat').appendChild(div);
-  div.scrollIntoView();
-  return div;
+  const div=document.createElement('div');div.className='bubble '+cls;div.innerHTML=html;
+  document.getElementById('chat').appendChild(div);div.scrollIntoView();return div;
 }
 function showTyping(){typingEl=addBubble('assistant','<div class="typing"><span></span><span></span><span></span></div>');}
 function hideTyping(){if(typingEl){typingEl.remove();typingEl=null;}}
 function login(){
-  user = localStorage.getItem('uaia_user');
-  if(!user){
-    user = prompt('Digite seu nome:','visitante_'+Math.floor(Math.random()*1000));
-    if(!user) return;
-    localStorage.setItem('uaia_user', user);
-  }
+  user=localStorage.getItem('uaia_user');
+  if(!user){user=prompt('Digite seu nome:','visitante_'+Math.floor(Math.random()*1000));if(!user)return;localStorage.setItem('uaia_user',user);}
   document.getElementById('username').textContent=user;
   document.getElementById('logout').style.display='inline';
   ws.send(JSON.stringify({type:'login',user}));
 }
-document.getElementById('logout').onclick=()=>{
-  localStorage.removeItem('uaia_user');
-  location.href='usuarios.html';
-};
+document.getElementById('logout').onclick=()=>{localStorage.removeItem('uaia_user');location.href='usuarios.html';};
 document.getElementById('send').onclick=send;
 document.getElementById('txt').addEventListener('keydown',e=>{if(e.key==='Enter')send();});
 function send(){
-  const txt=document.getElementById('txt');
-  const msg=txt.value.trim();
-  if(!msg)return;
-  addBubble('user',msg);
-  ws.send(JSON.stringify({type:'message',content:msg}));
-  txt.value='';showTyping();assistantBubble=addBubble('assistant','');
+  const txt=document.getElementById('txt');const msg=txt.value.trim();if(!msg)return;
+  addBubble('user',msg);ws.send(JSON.stringify({type:'message',content:msg}));txt.value='';
+  showTyping();assistantBubble=addBubble('assistant','');
 }
 
 // --- ElevenLabs TTS ---
@@ -112,21 +115,15 @@ function speak(text){
   const vid=voiceSel.value;
   fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vid}/stream`,{
     method:'POST',
-    headers:{
-      'xi-api-key':window.ELEVEN_API_KEY||'',
-      'Content-Type':'application/json'
-    },
+    headers:{'xi-api-key':window.ELEVEN_API_KEY||'','Content-Type':'application/json'},
     body:JSON.stringify({text,voice_settings:{stability:0.3,similarity_boost:0.9}})
   })
   .then(r=>r.blob())
   .then(b=>{
-    const url=URL.createObjectURL(b);
-    const audio=new Audio(url);
+    const url=URL.createObjectURL(b);const audio=new Audio(url);
     audio.play().catch(()=>{
-      const btn=document.createElement('button');
-      btn.textContent='▶️ Ouvir resposta';
-      btn.onclick=()=>audio.play();
-      assistantBubble.appendChild(btn);
+      const btn=document.createElement('button');btn.textContent='▶️ Ouvir resposta';
+      btn.onclick=()=>audio.play();assistantBubble.appendChild(btn);
     });
   });
 }
@@ -136,8 +133,7 @@ let assistantText='';
 ws.onmessage=e=>{
   const data=JSON.parse(e.data);
   if(data.type==='assistant'){
-    hideTyping();
-    assistantText+=data.content;
+    hideTyping();assistantText+=data.content;
     assistantBubble.innerHTML=assistantText.replace(/\\n/g,'<br>');
     assistantBubble.scrollIntoView();
     clearTimeout(window._speakT);
