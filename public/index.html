@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>UaIA</title>
 <style>
-:root{
-  --bg:#121212;--header:#1e1e1e;--user:#0084ff;--assistant:#2b2b2b;
-}
+:root{--bg:#121212;--header:#1e1e1e;--user:#0084ff;--assistant:#2b2b2b}
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:#eee;display:flex;flex-direction:column;height:100vh}
 header{background:var(--header);padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
@@ -84,13 +82,20 @@ function addBubble(cls,html){
 function showTyping(){typingEl=addBubble('assistant','<div class="typing"><span></span><span></span><span></span></div>');}
 function hideTyping(){if(typingEl){typingEl.remove();typingEl=null;}}
 function login(){
-  user=prompt('Digite seu nome:','visitante_'+Math.floor(Math.random()*1000));
-  if(!user)return;
+  user = localStorage.getItem('uaia_user');
+  if(!user){
+    user = prompt('Digite seu nome:','visitante_'+Math.floor(Math.random()*1000));
+    if(!user) return;
+    localStorage.setItem('uaia_user', user);
+  }
   document.getElementById('username').textContent=user;
   document.getElementById('logout').style.display='inline';
   ws.send(JSON.stringify({type:'login',user}));
 }
-document.getElementById('logout').onclick=()=>location.reload();
+document.getElementById('logout').onclick=()=>{
+  localStorage.removeItem('uaia_user');
+  location.href='usuarios.html';
+};
 document.getElementById('send').onclick=send;
 document.getElementById('txt').addEventListener('keydown',e=>{if(e.key==='Enter')send();});
 function send(){
