@@ -3,7 +3,6 @@ const express = require('express');
 const http = require('http');
 const { WebSocketServer } = require('ws');
 const { OpenAI } = require('openai');
-const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
 
@@ -21,7 +20,6 @@ function getContext(){
   const timeStr = now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   return `Hoje é ${dateStr}, ${timeStr}.`;
 }
-
 const systemPrompt = `Você é a UaIA – uma inteligência artificial emocional, proativa, empática e mágica. 
 Ajude o usuário antecipando necessidades e oferecendo sugestões úteis.`;
 
@@ -42,8 +40,7 @@ async function extractProfile(u,text){
   });
   try{Object.assign(mem.perfil,JSON.parse(r.choices[0].message.content));saveMem(u,mem);}catch(e){}
 }
-
-function needsLastTopic(text){return /isso|aquilo|mais sobre|continuar/i.test(text);}
+function needsLastTopic(t){return /isso|aquilo|mais sobre|continuar/i.test(t);}
 
 // ---------- Chat ----------
 async function chat(u,text,ws){
@@ -62,19 +59,36 @@ async function chat(u,text,ws){
     if(c){assistant+=c;ws.send(JSON.stringify({type:'assistant',content:c}));}
   }
   mem.conversacional.push({user:text,assistant});
-  mem.last_topic=assistant.slice(-300); // resumo do assunto
+  mem.last_topic=assistant.slice(-300);
   saveMem(u,mem);
   extractProfile(u,text).catch(console.error);
 }
 
 // ---------- WebSocket ----------
+const users=new Map();
 wss.on('connection',ws=>{
   let user=null;
   ws.on('message',d=>{
     const m=JSON.parse(d);
-    if(m.type==='login'){user=m.user;return;}
+    if(m.type==='login'){user=m.user;users.set(user,ws);return;}
     if(m.type==='message'&&user)chat(user,m.content,ws);
   });
+  ws.on('close',()=>{if(user)users.delete(user);});
 });
+
+// ---------- Orientação da Vida (mensagens proativas) ----------
+setInterval(()=>{
+  const now=new Date();const hr=now.getHours();
+  for(const [user,ws] of users){
+    if(hr===8){
+      ws.send(JSON.stringify({type:'assistant',content:'Bom dia! Como você está se sentindo hoje?'}));
+    }
+    if(hr===21){
+      const mem=loadMem(user);
+      const resumo=`Hoje conversamos sobre: ${mem.last_topic||'assuntos diversos'}.`;
+      ws.send(JSON.stringify({type:'assistant',content:`Hora do resumo do dia! ${resumo}`}));
+    }
+  }
+},60*60*1000); // verifica a cada hora
 
 server.listen(process.env.PORT||3000,()=>console.log('Server on '+(process.env.PORT||3000)));
