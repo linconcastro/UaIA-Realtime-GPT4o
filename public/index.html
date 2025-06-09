@@ -1,56 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>UaIA</title>
-
-  <!-- Google Font leve e sofisticada -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="lib/style.css">
 </head>
-
-<body class="dark">
-  <!-- Névoa sutil -->
-  <div class="fog" aria-hidden="true"></div>
-
-  <header>
-    <div class="logo-wrapper">
-      <!-- Use o PNG do anexo como /assets/logo.png -->
-      <img src="assets/logo.png" alt="UaIA logo" class="logo" />
+<body>
+  <div class="container">
+    <div class="logo">
+      <div class="circle"></div>
+      <div class="circle inner"></div>
     </div>
-  </header>
-
-  <main>
     <h1 class="title">uaia</h1>
-    <h2 class="subtitle">how can I help you?</h2>
-
-    <form id="prompt-form" autocomplete="off">
-      <div class="input-wrapper">
-        <input
-          id="prompt"
-          type="text"
-          placeholder="Enter a prompt or question…"
-          aria-label="Prompt"
-          autofocus
-        />
-        <button id="mic-btn" type="button" aria-label="Voice input">
-          <!-- Ícone SVG minimalista -->
-          <svg viewBox="0 0 24 24" width="20" height="20">
-            <path
-              d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 14 0h-2zm-5 8v3m-4 0h8"
-              fill="none"
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-            />
-          </svg>
-        </button>
-      </div>
-    </form>
-  </main>
-
-  <script src="script.js"></script>
+    <p class="subtitle">how can I help you?</p>
+    <div class="input-wrapper">
+      <input type="text" id="prompt" placeholder="Enter a prompt or question…">
+      <button id="mic" aria-label="Start voice input">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+          <path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"></path>
+          <path d="M19 11a1 1 0 0 0-2 0 5 5 0 0 1-10 0 1 1 0 0 0-2 0 7 7 0 0 0 6 6.92V21H9a1 1 0 0 0 0 2h6a1 1 0 0 0 0-2h-2v-3.08A7 7 0 0 0 19 11z"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+  <script src="lib/script.js"></script>
 </body>
-</html>
+</htm  </head>
+
+  
