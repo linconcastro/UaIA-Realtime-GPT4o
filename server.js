@@ -1,4 +1,4 @@
-// server.js - backend da UaIA com memória, voz e múltiplos perfis
+// server.js - backend da UaIA com rota correta para public/index.html
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
@@ -13,7 +13,14 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-app.use(express.static(path.join(__dirname)));
+// Serve os arquivos da pasta /public corretamente
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Garante que a URL / carregue index.html da pasta /public
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 app.use(express.json());
 
 const USERS_FILE = path.join(__dirname, 'usuarios.json');
