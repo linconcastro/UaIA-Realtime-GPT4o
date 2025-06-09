@@ -1,52 +1,85 @@
-const micBtn = document.getElementById('mic');
-const input  = document.getElementById('prompt');
+// script.js - conecta interface da UaIA ao backend com WebSocket e voz
+const params = new URLSearchParams(window.location.search);
+const user = params.get('user') || 'visitante';
+const pass = params.get('pass') || 'senha';
 
-let recognition;
-let listening = false;
+let ws;
+let wsReady = false;
 
-/* ----------- Web Speech API ----------- */
-if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  recognition = new SpeechRecognition();
-  recognition.lang = 'en-US';
-  recognition.interimResults = false;
-  recognition.continuous = false;
+function conectarWs() {
+  ws = new WebSocket(`wss://${window.location.host}/?user=${user}&pass=${pass}`);
 
-  recognition.onresult = (event) => {
-    const transcript = event.results[0][0].transcript;
-    input.value = transcript;
+  ws.onopen = () => {
+    wsReady = true;
+    console.log("🟢 Conectado com sucesso!");
   };
 
-  recognition.onend = () => {
-    listening = false;
-    micBtn.classList.remove('recording');
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === "partial") {
+      renderResposta(data.content);
+    }
+    if (data.type === "end") {
+      // final da resposta
+    }
   };
 }
 
-/* ----------- Controle do botão ----------- */
-micBtn.addEventListener('click', () => {
-  if (!recognition) {
-    alert('Speech Recognition not supported in this browser.');
+function renderResposta(texto) {
+  const resposta = document.createElement("div");
+  resposta.className = "msg uaia";
+  resposta.innerText = texto;
+  document.body.appendChild(resposta);
+  speak(texto);
+}
+
+function enviarMensagem() {
+  const input = document.querySelector("input[type='text']");
+  const msg = input.value.trim();
+  if (!msg || !wsReady) return;
+  const eu = document.createElement("div");
+  eu.className = "msg user";
+  eu.innerText = msg;
+  document.body.appendChild(eu);
+  ws.send(msg);
+  input.value = "";
+}
+
+async function speak(text) {
+  try {
+    const response = await fetch("/fala", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ texto: text })
+    });
+    if (!response.ok) return;
+    const blob = await response.blob();
+    const audio = new Audio(URL.createObjectURL(blob));
+    audio.play();
+  } catch (err) {
+    console.error("Erro ao falar:", err);
+  }
+}
+
+function startListening() {
+  if (!('webkitSpeechRecognition' in window)) {
+    alert("Seu navegador não suporta entrada por voz.");
     return;
   }
-  if (!listening) {
-    recognition.start();
-    listening = true;
-    micBtn.classList.add('recording');
-  } else {
-    recognition.stop();
-  }
-});
+  const recognition = new webkitSpeechRecognition();
+  recognition.lang = "pt-BR";
+  recognition.onresult = function (event) {
+    const text = event.results[0][0].transcript;
+    document.querySelector("input[type='text']").value = text;
+    enviarMensagem();
+  };
+  recognition.onerror = function (event) {
+    console.error("Erro no reconhecimento de voz:", event.error);
+  };
+  recognition.start();
+}
 
-/* ----------- Animação de gravação ----------- */
-const extraStyle = document.createElement('style');
-extraStyle.textContent = `
-  #mic.recording {
-    animation: glowPulse 1s ease-in-out infinite;
-  }
-  @keyframes glowPulse {
-    0%, 100% { box-shadow: 0 0 12px rgba(66,135,245,0.9), 0 0 25px rgba(66,135,245,0.6); }
-    50%      { box-shadow: 0 0 18px rgba(66,135,245,1), 0 0 35px rgba(66,135,245,0.8); }
-  }
-`;
-document.head.appendChild(extraStyle);
+document.addEventListener("DOMContentLoaded", () => {
+  conectarWs();
+  document.querySelector("button").addEventListener("click", enviarMensagem);
+});
