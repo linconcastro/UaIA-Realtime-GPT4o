@@ -1,94 +1,129 @@
+// server.js - backend da UaIA com memória, voz e múltiplos perfis
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
-const { WebSocketServer } = require('ws');
+const WebSocket = require('ws');
 const { OpenAI } = require('openai');
-const fs = require('fs');
+const fetch = require('node-fetch');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
+const wss = new WebSocket.Server({ server });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname)));
+app.use(express.json());
 
-// ---------- Helpers ----------
-function getContext(){
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
-  const timeStr = now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-  return `Hoje é ${dateStr}, ${timeStr}.`;
+const USERS_FILE = path.join(__dirname, 'usuarios.json');
+function loadUsers() {
+  if (!fs.existsSync(USERS_FILE)) fs.writeFileSync(USERS_FILE, '{}');
+  return JSON.parse(fs.readFileSync(USERS_FILE));
 }
-const systemPrompt = `Você é a UaIA – uma inteligência artificial emocional, proativa, empática e mágica. 
-Ajude o usuário antecipando necessidades e oferecendo sugestões úteis.`;
-
-function memPath(u){return path.join(__dirname,`memory_${u}.json`);}
-function loadMem(u){
-  const p=memPath(u);
-  if(fs.existsSync(p)) return JSON.parse(fs.readFileSync(p,'utf8'));
-  return {perfil:{},preferencias:{},rotina:{},afetivo:{},conversacional:[],last_topic:''};
+function saveUsers(users) {
+  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
 }
-function saveMem(u,m){fs.writeFileSync(memPath(u),JSON.stringify(m,null,2));}
-
-async function extractProfile(u,text){
-  const mem=loadMem(u);
-  const prompt=`Texto: "${text}"\nPerfil atual: ${JSON.stringify(mem.perfil)}\nExtraia nome, idade, hobbies, estilo de vida, amigos (JSON).`;
-  const r=await openai.chat.completions.create({
-    model:'gpt-4o-mini',
-    messages:[{role:'system',content:'Extraia dados de perfil.'},{role:'user',content:prompt}]
-  });
-  try{Object.assign(mem.perfil,JSON.parse(r.choices[0].message.content));saveMem(u,mem);}catch(e){}
+function getMemoryPath(user) {
+  return path.join(__dirname, `memory_${user}.json`);
 }
-function needsLastTopic(t){return /isso|aquilo|mais sobre|continuar/i.test(t);}
+function loadMemory(user) {
+  const path = getMemoryPath(user);
+  if (!fs.existsSync(path)) fs.writeFileSync(path, '{}');
+  return JSON.parse(fs.readFileSync(path));
+}
+function saveMemory(user, data) {
+  fs.writeFileSync(getMemoryPath(user), JSON.stringify(data, null, 2));
+}
 
-// ---------- Chat ----------
-async function chat(u,text,ws){
-  const mem=loadMem(u);
-  const ctx=getContext();
-  const msgs=[
-    {role:'system',content:systemPrompt},
-    {role:'system',content:`Contexto: ${ctx}`},
-    {role:'system',content:`Memória: ${JSON.stringify(mem)}`},
-    {role:'user',content: needsLastTopic(text)?`${mem.last_topic}\n\n${text}`:text}
-  ];
-  const stream=await openai.chat.completions.create({model:'gpt-4o-mini',stream:true,messages:msgs});
-  let assistant='';
-  for await(const chunk of stream){
-    const c=chunk.choices?.[0]?.delta?.content||'';
-    if(c){assistant+=c;ws.send(JSON.stringify({type:'assistant',content:c}));}
+app.post('/fala', async (req, res) => {
+  const { texto } = req.body;
+  try {
+    const resposta = await fetch("https://api.elevenlabs.io/v1/text-to-speech/exAVrFY2a7RCaz7Tz9QU/stream", {
+      method: 'POST',
+      headers: {
+        'Accept': 'audio/mpeg',
+        'Content-Type': 'application/json',
+        'xi-api-key': process.env.ELEVEN_API_KEY
+      },
+      body: JSON.stringify({
+        text: texto,
+        model_id: "eleven_multilingual_v2",
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75,
+          style: 0.3,
+          use_speaker_boost: true
+        }
+      })
+    });
+    if (!resposta.ok) return res.status(500).send('Erro ao gerar voz');
+    res.set({ 'Content-Type': 'audio/mpeg' });
+    resposta.body.pipe(res);
+  } catch (e) {
+    console.error('Erro na fala:', e);
+    res.status(500).send('Erro');
   }
-  mem.conversacional.push({user:text,assistant});
-  mem.last_topic=assistant.slice(-300);
-  saveMem(u,mem);
-  extractProfile(u,text).catch(console.error);
-}
-
-// ---------- WebSocket ----------
-const users=new Map();
-wss.on('connection',ws=>{
-  let user=null;
-  ws.on('message',d=>{
-    const m=JSON.parse(d);
-    if(m.type==='login'){user=m.user;users.set(user,ws);return;}
-    if(m.type==='message'&&user)chat(user,m.content,ws);
-  });
-  ws.on('close',()=>{if(user)users.delete(user);});
 });
 
-// ---------- Orientação da Vida (mensagens proativas) ----------
-setInterval(()=>{
-  const now=new Date();const hr=now.getHours();
-  for(const [user,ws] of users){
-    if(hr===8){
-      ws.send(JSON.stringify({type:'assistant',content:'Bom dia! Como você está se sentindo hoje?'}));
-    }
-    if(hr===21){
-      const mem=loadMem(user);
-      const resumo=`Hoje conversamos sobre: ${mem.last_topic||'assuntos diversos'}.`;
-      ws.send(JSON.stringify({type:'assistant',content:`Hora do resumo do dia! ${resumo}`}));
-    }
+wss.on('connection', (ws, req) => {
+  const url = new URL(`http://localhost${req.url}`);
+  const user = url.searchParams.get('user') || 'visitante';
+  const pass = url.searchParams.get('pass');
+  const users = loadUsers();
+  if (users[user] !== pass) {
+    ws.close();
+    return;
   }
-},60*60*1000); // verifica a cada hora
 
-server.listen(process.env.PORT||3000,()=>console.log('Server on '+(process.env.PORT||3000)));
+  const memory = loadMemory(user);
+  if (!memory.perfil) memory.perfil = { nome: '', hobbies: [], estiloDeVida: '', livros: [], viagens: [], amigos: [] };
+  if (!memory.chatHistory) memory.chatHistory = [];
+
+  ws.on('message', async msg => {
+    const text = msg.toString();
+    memory.chatHistory.push({ role: 'user', content: text });
+    try {
+      const stream = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: `Você é a UaIA, uma presença viva, gentil e consciente. Use as informações abaixo como memória: ${JSON.stringify(memory.perfil)}` },
+          ...memory.chatHistory.slice(-10)
+        ],
+        stream: true
+      });
+      let response = '';
+      for await (const part of stream) {
+        const chunk = part.choices?.[0]?.delta?.content;
+        if (chunk) {
+          response += chunk;
+          ws.send(JSON.stringify({ type: 'partial', content: chunk }));
+        }
+      }
+      memory.chatHistory.push({ role: 'assistant', content: response });
+      saveMemory(user, memory);
+      ws.send(JSON.stringify({ type: 'end' }));
+    } catch (e) {
+      console.error('Erro no GPT:', e);
+      ws.send(JSON.stringify({ type: 'error', message: 'Erro ao responder' }));
+    }
+  });
+});
+
+app.get('/usuarios', (req, res) => res.json(loadUsers()));
+app.post('/usuarios', (req, res) => {
+  const { nome, senha } = req.body;
+  const u = loadUsers();
+  u[nome] = senha;
+  saveUsers(u);
+  res.json({ sucesso: true });
+});
+app.delete('/usuarios/:nome', (req, res) => {
+  const u = loadUsers();
+  delete u[req.params.nome];
+  saveUsers(u);
+  res.json({ sucesso: true });
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log("🚀 UaIA pronta na porta", PORT));
