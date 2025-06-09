@@ -1,54 +1,90 @@
-/* ---------- Variáveis de tema ---------- */
-:root {  --bg-dark: ##0e2a3b;
-  --text-primary: rgba(255, 255, 255, 0.9);
-  --text-secondary: rgba(255, 255, 255, 0.45);
-  --glass: rgba(255, 255, 255, 0.05);
-  --glass-border: rgba(255, 255, 255, 0.15);
-  --accent: #9fdcff;
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap');
 
-/* ---------- Base ---------- */
-*,
-*::before,
-*::after {
+/* Reset e base */
+* {
   box-sizing: border-box;
-}
-
-body {
   margin: 0;
-  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
-  background: var(--bg-dark);
-  color: var(--text-primary);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-height: 100vh;
-  overflow: hidden;
+  padding: 0;
 }
 
-/* Névoa sutil */
-.fog {
-  position: fixed;
-  inset: 0;
- background:
-  radial-gradient(circle at center, rgba(255,255,255,0.12) 0%, transparent 70%),
-  radial-gradient(circle at 80% 80%, rgba(255,255,255,0.05) 0%, transparent 60%);
-  );
-  filter: blur(60px);
+/* ---------- Fundo geral ---------- */
+body {
+  font-family: 'Inter', sans-serif;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 50%, #0f2b62 0%, #081a3d 60%, #040d20 100%);
+  overflow: hidden;
+  position: relative;
+  color: #fff;
+}
+
+/* Névoa/Glow animado */
+body::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  left: -20%;
+  width: 140%;
+  height: 140%;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(66, 135, 245, 0.25), transparent 60%),
+    radial-gradient(circle at 70% 70%, rgba(66, 135, 245, 0.15), transparent 60%),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05), transparent 70%);
+  filter: blur(100px);
+  animation: moveFog 30s ease-in-out infinite;
   pointer-events: none;
 }
 
-/* ---------- Logo ---------- */
-.logo-wrapper {
-  margin-top: 8vh;
-  animation: pulse 6s ease-in-out infinite;
-  filter: drop-shadow(0 0 25px rgba(159, 220, 255, 0.6));
+@keyframes moveFog {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-5%, -5%) scale(1.1); }
 }
+
+/* ---------- Estrutura ---------- */
+.container {
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  padding: 0 1rem;
+}
+
+/* ---------- Logo (círculo duplo) ---------- */
 .logo {
- width: 200px;
-  height: 200px;
-  object-fit: contain;
+  position: relative;
+  width: 160px;
+  height: 160px;
+  margin: 0 auto 24px;
 }
+
+.circle {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%,
+              rgba(255,255,255,0.35),
+              rgba(255,255,255,0.05) 70%);
+  backdrop-filter: blur(8px);
+  animation: pulse 4s ease-in-out infinite;
+  box-shadow: 0 0 25px rgba(66, 135, 245, 0.6),
+              0 0 50px rgba(66, 135, 245, 0.4);
+}
+
+.circle.inner {
+  width: 70%;
+  height: 70%;
+  top: 15%;
+  left: 15%;
+  background: radial-gradient(circle at 70% 70%,
+              rgba(66,135,245,0.6),
+              rgba(66,135,245,0.15) 70%);
+  box-shadow: 0 0 15px rgba(66, 135, 245, 0.5),
+              inset 0 0 20px rgba(255,255,255,0.2);
+  animation-delay: 2s;
+}
+
 @keyframes pulse {
   0%, 100% { transform: scale(1); }
   50%      { transform: scale(1.05); }
@@ -56,92 +92,81 @@ body {
 
 /* ---------- Títulos ---------- */
 .title {
-  margin: 4vh 0 1vh;
-  font-size: clamp(2.5rem, 5vw, 3.5rem);
+  font-size: 3rem;
   font-weight: 300;
-  letter-spacing: 0.12em;
-  text-align: center;
-}
-.subtitle {
-  margin: 0 0 6vh;
-  font-size: clamp(1.1rem, 2.5vw, 1.5rem);
-  font-weight: 200;
-  color: var(--text-secondary);
-  text-align: center;
+  letter-spacing: 0.05em;
+  text-transform: lowercase;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(66, 135, 245, 0.6);
+  margin-bottom: 8px;
 }
 
-/* ---------- Caixa de entrada ---------- */
+.subtitle {
+  font-size: 1rem;
+  color: rgba(255,255,255,0.6);
+  backdrop-filter: blur(2px);
+  margin-bottom: 40px;
+}
+
+/* ---------- Campo de entrada ---------- */
 .input-wrapper {
   display: flex;
   align-items: center;
-  width: clamp(280px, 60vw, 640px);
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(14px);
-  border-radius: 36px;
-  padding: 0.6rem 0.8rem 0.6rem 1.2rem;
-}
-#prompt {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  font-size: 1rem;
-  color: var(--text-primary);
-}
-#prompt::placeholder {
-  color: var(--text-secondary);
+  justify-content: center;
+  max-width: 600px;
+  margin: 0 auto;
+  position: relative;
 }
 
-/* ---------- Botão do microfone ---------- */
-#mic-btn {
-  background: transparent;
-  border: none;
+input[type="text"] {
+  width: 100%;
+  padding: 14px 60px 14px 20px;
+  border-radius: 40px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  font-size: 1rem;
   outline: none;
+  backdrop-filter: blur(6px);
+  transition: background 0.3s ease;
+}
+
+input[type="text"]::placeholder {
+  color: rgba(255,255,255,0.6);
+}
+
+input[type="text"]:focus {
+  background: rgba(255,255,255,0.15);
+}
+
+/* ---------- Botão de microfone ---------- */
+#mic {
+  position: absolute;
+  right: 8px;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(66,135,245,0.8);
+  color: #fff;
   display: flex;
-    position: relative;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
   cursor: pointer;
-  transition: background 0.2s ease;
-
-#mic-btn::before {
-  content: "";
-  position: absolute;
-  inset: -6px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(159,220,255,0.4) 0%, transparent 70%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  box-shadow: 0 0 12px rgba(66,135,245,0.9),
+              0 0 25px rgba(66,135,245,0.6);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-#mic-btn:hover::before,
-#mic-btn:focus::before {
-  opacity: 1;
-}
-}
-#mic-btn svg {
-  fill: var(--text-primary);
-  filter: drop-shadow(0 0 8px rgba(159, 220, 255, 0.8))
-}
-#mic-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-/* ---------- Tema claro futuro ---------- */
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg-dark: #f5f7fa;
-    --text-primary: #1a1a1a;
-    --text-secondary: #636e7b;
-    --glass: rgba(255, 255, 255, 0.65);
-    --glass-border: rgba(0, 0, 0, 0.1);
-  }
-}
-
-#mic-btn:active {
+#mic:active {
   transform: scale(0.95);
+  box-shadow: 0 0 6px rgba(66,135,245,0.9),
+              0 0 15px rgba(66,135,245,0.6);
+}
+
+/* ---------- Responsivo ---------- */
+@media (max-width: 600px) {
+  .title     { font-size: 2.5rem; }
+  .subtitle  { font-size: 0.9rem; }
+  .logo      { width: 120px; height: 120px; }
 }
