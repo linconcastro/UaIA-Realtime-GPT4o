@@ -1,0 +1,134 @@
+/* ---------- Variáveis de tema ---------- */
+:root {
+  --bg-dark: #0c1b24;
+  --text-primary: rgba(255, 255, 255, 0.9);
+  --text-secondary: rgba(255, 255, 255, 0.45);
+  --glass: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.15);
+  --accent: #9fdcff;
+}
+
+/* ---------- Base ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  background: var(--bg-dark);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* Névoa sutil */
+.fog {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(
+      circle at 50% 30%,
+      rgba(255, 255, 255, 0.08) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      circle at 80% 80%,
+      rgba(255, 255, 255, 0.05) 0%,
+      transparent 60%
+    );
+  filter: blur(60px);
+  pointer-events: none;
+}
+
+/* ---------- Logo ---------- */
+.logo-wrapper {
+  margin-top: 8vh;
+  animation: pulse 6s ease-in-out infinite;
+  filter: drop-shadow(0 0 25px rgba(159, 220, 255, 0.6));
+}
+.logo {
+  width: 160px;
+  height: 160px;
+  object-fit: contain;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.05); }
+}
+
+/* ---------- Títulos ---------- */
+.title {
+  margin: 4vh 0 1vh;
+  font-size: clamp(2.5rem, 5vw, 3.5rem);
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  text-align: center;
+}
+.subtitle {
+  margin: 0 0 6vh;
+  font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+  font-weight: 200;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* ---------- Caixa de entrada ---------- */
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  width: clamp(280px, 60vw, 640px);
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(14px);
+  border-radius: 36px;
+  padding: 0.6rem 0.8rem 0.6rem 1.2rem;
+}
+#prompt {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+#prompt::placeholder {
+  color: var(--text-secondary);
+}
+
+/* ---------- Botão do microfone ---------- */
+#mic-btn {
+  background: transparent;
+  border: none;
+  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+#mic-btn svg {
+  fill: var(--text-primary);
+  filter: drop-shadow(0 0 4px rgba(159, 220, 255, 0.6));
+}
+#mic-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ---------- Tema claro futuro ---------- */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg-dark: #f5f7fa;
+    --text-primary: #1a1a1a;
+    --text-secondary: #636e7b;
+    --glass: rgba(255, 255, 255, 0.65);
+    --glass-border: rgba(0, 0, 0, 0.1);
+  }
+}
