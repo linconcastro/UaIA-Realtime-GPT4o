@@ -5,6 +5,7 @@ const pass = params.get('pass') || 'senha';
 
 let ws;
 let wsReady = false;
+let currentResponseEl = null;
 
 function conectarWs() {
   ws = new WebSocket(`wss://${window.location.host}/?user=${user}&pass=${pass}`);
@@ -20,16 +21,18 @@ function conectarWs() {
       renderResposta(data.content);
     }
     if (data.type === "end") {
-      // final da resposta
+      currentResponseEl = null; // libera para próxima resposta
     }
   };
 }
 
 function renderResposta(texto) {
-  const resposta = document.createElement("div");
-  resposta.className = "msg uaia";
-  resposta.innerText = texto;
-  document.body.appendChild(resposta);
+  if (!currentResponseEl) {
+    currentResponseEl = document.createElement("div");
+    currentResponseEl.className = "msg uaia";
+    document.body.appendChild(currentResponseEl);
+  }
+  currentResponseEl.innerText += texto;
   speak(texto);
 }
 
