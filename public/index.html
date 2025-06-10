@@ -145,13 +145,21 @@
     const input = document.getElementById("input");
     let ws, wsReady = false;
 
+      let uaiaDiv = null;
+  let uaiaText = "";
+
     function conectarWs() {
       ws = new WebSocket(`wss://${window.location.host}/?user=${user}&pass=${pass}`);
       ws.onopen = () => wsReady = true;
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === "partial") renderMensagem(data.content, "uaia");
-      };
+     ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "partial") {
+        renderParcialUaia(data.content);
+      } else if (data.type === "end") {
+        finalizarUaia();
+      }
+    };
+ 
     }
 
     function renderMensagem(texto, classe) {
@@ -160,8 +168,25 @@
       msg.innerText = texto;
       chat.appendChild(msg);
       chat.scrollTop = chat.scrollHeight;
-      if (classe === "uaia") speak(texto);
+ 
+    
+      function renderParcialUaia(trecho) {
+    if (!uaiaDiv) {
+      uaiaDiv = document.createElement("div");
+      uaiaDiv.className = "msg uaia";
+      chat.appendChild(uaiaDiv);
     }
+    uaiaText += trecho;
+    uaiaDiv.innerText = uaiaText;
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function finalizarUaia() {
+    if (uaiaText) speak(uaiaText);
+    uaiaDiv = null;
+    uaiaText = "";
+  }
+}
 
     function enviarMensagem() {
       const msg = input.value.trim();
