@@ -6,6 +6,8 @@ const pass = params.get('pass') || 'senha';
 let ws;
 let wsReady = false;
 let currentResponseEl = null;
+let currentResponseText = '';
+
 
 function conectarWs() {
   ws = new WebSocket(`wss://${window.location.host}/?user=${user}&pass=${pass}`);
@@ -19,10 +21,25 @@ function conectarWs() {
     const data = JSON.parse(event.data);
     if (data.type === "partial") {
       renderResposta(data.content);
+  }
+      if (data.type === "end") {
+        finalizarResposta();
+      }
+; // libera para próxima resposta
     }
-    if (data.type === "end") {
-      currentResponseEl = null; // libera para próxima resposta
-    }
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+
   };
 }
 
@@ -30,10 +47,19 @@ function renderResposta(texto) {
   if (!currentResponseEl) {
     currentResponseEl = document.createElement("div");
     currentResponseEl.className = "msg uaia";
-    document.body.appendChild(currentResponseEl);
+    document.getElementById("chat").appendChild(currentResponseEl);
   }
-  currentResponseEl.innerText += texto;
-  speak(texto);
+  currentResponseText += texto;
+  currentResponseEl.innerText = currentResponseText;
+  currentResponseEl.scrollIntoView({ behavior: 'smooth' });
+}
+
+function finalizarResposta() {
+  if (currentResponseText) {
+    speak(currentResponseText);
+  }
+  currentResponseEl = null;
+  currentResponseText = '';
 }
 
 function enviarMensagem() {
@@ -43,7 +69,7 @@ function enviarMensagem() {
   const eu = document.createElement("div");
   eu.className = "msg user";
   eu.innerText = msg;
-  document.body.appendChild(eu);
+ document.getElementById("chat").appendChild(eu);
   ws.send(msg);
   input.value = "";
 }
